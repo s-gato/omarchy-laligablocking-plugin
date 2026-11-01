@@ -99,3 +99,10 @@ blocking is active on Spanish ISPs, powered by https://hayahora.futbol.
   can change them live. Qt 6.12 shadows the `Color` name: shell docs require
   `import qs.Commons as Commons` + `Commons.Color` — fixed in both QML files
   (likely one of the reported visual issues).
+- L9 (user feedback, verbatim): "still seeing 5/5 and the overlaid text" —
+  aggregate badge means autodetection did not resolve the ISP on x390-omarchy
+  (fallback to aggregate); found and fixed a real race (stream-finished
+  handler decided the result while the process was still running, commit
+  7ae80ae; ipapi.co third provider; console.info log line). Overlay not yet
+  identified: no screenshot has ever arrived in this session; asked for
+  re-attach + diagnostics (qs log, curl org) again.
