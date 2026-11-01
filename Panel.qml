@@ -3,6 +3,8 @@ import Quickshell
 import qs.Commons as Commons
 import qs.Ui
 
+import "Model.js" as LaLigaModel
+
 Panel {
   id: root
   moduleName: "sergio.laliga-monitor"
@@ -76,25 +78,33 @@ Panel {
       spacing: Style.space(4)
 
       // ---- Header ----
+      // Two-sided slots: the right side is measured first, the left elides
+      // within the room left over, so long text can never overlap
       Item {
         width: parent.width
-        height: headerText.implicitHeight
+        height: Math.max(headerText.implicitHeight, updatedText.implicitHeight)
+
+        Text {
+          id: updatedText
+          anchors.right: parent.right
+          anchors.verticalCenter: parent.verticalCenter
+          text: root.feed && root.feed.ok ? "Updated " + LaLigaModel.Model.formatTime(root.feed.lastUpdate) : ""
+          color: Commons.Color.muted
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Style.font.small
+        }
+
         Text {
           id: headerText
           anchors.left: parent.left
+          anchors.verticalCenter: parent.verticalCenter
+          width: parent.width - updatedText.implicitWidth - Style.space(12)
           text: "LaLiga blocking"
           color: root.barForeground
           font.family: root.bar ? root.bar.fontFamily : Style.font.family
           font.pixelSize: Style.font.subtitle
           font.bold: true
-        }
-        Text {
-          anchors.right: parent.right
-          anchors.baseline: headerText.baseline
-          text: root.feed && root.feed.ok ? root.feed.lastUpdate : ""
-          color: Commons.Color.muted
-          font.family: root.bar ? root.bar.fontFamily : Style.font.family
-          font.pixelSize: Style.font.small
+          elide: Text.ElideRight
         }
       }
 
@@ -106,8 +116,6 @@ Panel {
         font.family: root.bar ? root.bar.fontFamily : Style.font.family
         font.pixelSize: Style.font.small
         elide: Text.ElideRight
-        fontSizeMode: Text.HorizontalFit
-        renderTypeQuality: Text.HighQuality
       }
 
       // ---- Data unavailable ----
@@ -167,27 +175,33 @@ Panel {
       }
 
       // ---- Footer ----
+      // Same two-sided slot as the header: measured right side, eliding left
       Item {
         width: parent.width
-        height: footerText.implicitHeight + Style.space(6)
+        height: Math.max(footerText.implicitHeight, footerCount.implicitHeight) + Style.space(4)
+
         Text {
-          id: footerText
-          anchors.bottom: parent.bottom
-          anchors.left: parent.left
-          text: "Data: hayahora.futbol"
-          color: Commons.Color.muted
-          font.family: root.bar ? root.bar.fontFamily : Style.font.family
-          font.pixelSize: Style.font.small
-        }
-        Text {
-          anchors.baseline: footerText.baseline
+          id: footerCount
           anchors.right: parent.right
+          anchors.verticalCenter: parent.verticalCenter
           text: root.feed && root.feed.ok && root.feed.aggregate.totalIsps > 0
             ? root.feed.aggregate.blockedCount + "/" + root.feed.aggregate.totalIsps + " ISPs"
             : ""
           color: root.barForeground
           font.family: root.bar ? root.bar.fontFamily : Style.font.family
           font.pixelSize: Style.font.small
+        }
+
+        Text {
+          id: footerText
+          anchors.left: parent.left
+          anchors.verticalCenter: parent.verticalCenter
+          width: parent.width - footerCount.implicitWidth - Style.space(12)
+          text: "Data: hayahora.futbol"
+          color: Commons.Color.muted
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Style.font.small
+          elide: Text.ElideRight
         }
       }
     }

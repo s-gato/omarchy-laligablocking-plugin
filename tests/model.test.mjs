@@ -153,6 +153,13 @@ test('matchIsp answers null for untracked or empty orgs', () => {
   assert.equal(Model.matchIsp(undefined), null)
 })
 
+test('formatTime shortens the feed timestamp to HH:MM', () => {
+  assert.equal(Model.formatTime('2026-11-01 19:30:55Z'), '19:30')
+  assert.equal(Model.formatTime('2026-11-01 9:05:00Z'), '9:05')
+  assert.equal(Model.formatTime(''), '')
+  assert.equal(Model.formatTime('garbage'), 'garbage') // pass through, never invent
+})
+
 test('orgFromLookup extracts the org field from IP-lookup bodies', () => {
   assert.equal(Model.orgFromLookup('{"ip":"1.2.3.4","org":"Telefonica de Espana SAU"}', 'org'), 'Telefonica de Espana SAU')
   assert.equal(Model.orgFromLookup('{"asn_org":"Digi Spain Telecom S.L."}', 'asn_org'), 'Digi Spain Telecom S.L.')

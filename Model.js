@@ -67,6 +67,14 @@ var Model = {
     return false
   },
 
+  // Shorten the feed's "2026-11-01 19:30:55Z" timestamp to "19:30" for the
+  // panel header. Unparseable input passes through unchanged.
+  formatTime: function (lastUpdate) {
+    if (typeof lastUpdate !== 'string') return ''
+    var m = lastUpdate.match(/^\d{4}-\d{2}-\d{2}[T ](\d{1,2}):(\d{2})/)
+    return m ? m[1] + ':' + m[2] : lastUpdate
+  },
+
   // Extract a field from a public-IP lookup body (ipinfo.io "org",
   // ifconfig.co "asn_org"). Answers "" for unusable input.
   orgFromLookup: function (raw, field) {
