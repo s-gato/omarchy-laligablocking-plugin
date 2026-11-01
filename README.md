@@ -7,26 +7,32 @@ public measurements of [hayahora.futbol](https://hayahora.futbol).
 During football broadcasts, Spanish ISPs block IP addresses under court order
 (sentencia 310/2024). Because of shared CDN infrastructure, those blocks can
 take down unrelated websites and services. This widget surfaces the live
-status of those blocks right in your bar.
+status of those blocks right in your bar:
+
+- **One colored glyph** in the bar — dim when your connection is clear, red
+  when it is being blocked, `?` when there is no data.
+- **Your ISP, not all of them** — auto-detected from your WAN org (Vodafone,
+  Movistar, Orange, DIGI, Masmovil; MVNOs map to their host network), or pin
+  one manually. On a VPN the widget watches the general situation instead, so
+  match-day blackouts stay visible.
+- **A panel with the full picture** — every tracked ISP, who is blocking how
+  many IPs, the feed's last update, and both your situation and the overall
+  fraction on hover.
+
+Data comes from community probes inside each Spanish ISP and refreshes every
+5 minutes (configurable) — deliberately conservative, as hayahora.futbol
+asks.
 
 ![preview](design/laliga-monitor/preview.png)
 
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/sergio/omarchy-laliga-plugin.git --enable
+omarchy plugin add https://github.com/s-gato/omarchy-laliga-plugin.git --enable
 ```
 
-Or, from a local checkout:
-
-```sh
-omarchy plugin validate /path/to/omarchy-laliga-plugin
-cp -r /path/to/omarchy-laliga-plugin ~/.config/omarchy/plugins/sergio.laliga-monitor
-omarchy plugin enable sergio.laliga-monitor
-```
-
-The widget appears in the right section of the bar. `jq` is not required;
-`curl` is (preinstalled on Omarchy).
+Requires `curl` (preinstalled on Omarchy). The widget appears in the right
+section of the bar.
 
 ## Reading the widget
 
