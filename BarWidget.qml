@@ -28,19 +28,23 @@ BarWidget {
   }
 
   // ---- ISP resolution ----
-  // detectedIsp: "" = lookup in flight, "none" = looked up and untracked
+  // detectedIsp: "" = lookup in flight, "none" = looked up and untracked.
+  // Aggregate (all ISPs) only when explicitly requested: an unresolved ISP
+  // shows "?" instead of pretending to know (auto-detect retries 3x before
+  // giving up).
   property string detectedIsp: ""
-  readonly property bool aggregateMode: ispSetting === "all" || (ispSetting === "auto" && detectedIsp === "none")
-  readonly property string activeIsp: {
-    if (ispSetting !== "auto") return ispSetting === "all" ? "" : ispSetting
-    return detectedIsp === "none" ? "" : detectedIsp
-  }
+  property int _detectAttempts: 0
+  readonly property bool ispResolved: ispSetting !== "auto" || (detectedIsp.length > 0 && detectedIsp !== "none")
+  readonly property string activeIsp: ispSetting === "all" ? "" : (ispSetting === "auto" ? (detectedIsp === "none" ? "" : detectedIsp) : ispSetting)
 
   // ---- Feed state ----
   // feed: { ok, lastUpdate, isps: [{ isp, blocked, total }], aggregate }
   property var feed: null
+  readonly property var own: (feed && feed.ok && activeIsp.length > 0) ? LaLigaModel.Model.ispState(feed, activeIsp) : null
   readonly property var total: LaLigaModel.Model.totalState(feed, activeIsp.length > 0 ? activeIsp : null)
-  readonly property string state: total.state  // clear | partial | blocked | unknown
+  // Unresolved ISP or unavailable feed both answer "unknown": the badge
+  // never shows data it cannot stand behind.
+  readonly property string state: ispResolved ? total.state : "unknown"
 
   // Theme-token state colors (mirrors design/laliga-monitor):
   // clear -> dimmed bar text, partial -> accent, blocked -> urgent,
@@ -60,8 +64,14 @@ BarWidget {
 
   function detectIsp() {
     if (root.ispSetting !== "auto") return
-    if (!ipinfoProc.running && !ifconfigProc.running) ipinfoProc.running = true
+    if (!ipinfoProc.running && !ifconfigProc.running && !ipapiProc.running) {
+      root._detectAttempts += 1
+      ipinfoProc.running = true
+    }
   }
+
+  onStateChanged: console.info("laliga-monitor: state=" + state + " activeIsp=" + activeIsp + " ispSetting=" + ispSetting)
+  onDetectedIspChanged: if (detectedIsp.length > 0) console.info("laliga-monitor: detectedIsp=" + detectedIsp)
 
   function tooltipFor(t) {
     if (t.state === "unknown") return "LaLiga blocking: data unavailable"
@@ -125,10 +135,22 @@ BarWidget {
       console.info("laliga-monitor: ISP " + isp + " from org '" + org + "'")
     } else if (next !== null) {
       next.running = true
+    } else if (root._detectAttempts < 3) {
+      // Transient lookup failures are common; retry before giving up
+      console.info("laliga-monitor: lookup attempt " + root._detectAttempts + " failed, retrying in 60s")
+      retryTimer.restart()
     } else {
       root.detectedIsp = "none"
-      console.info("laliga-monitor: ISP not detected (org='" + org + "') — aggregate mode")
+      console.info("laliga-monitor: ISP not detected after " + root._detectAttempts + " attempts — badge shows ?, set 'isp' in settings")
     }
+  }
+
+  Timer {
+    id: retryTimer
+    interval: 60000
+    running: false
+    repeat: false
+    onTriggered: root.detectIsp()
   }
 
   Timer {
@@ -221,7 +243,8 @@ BarWidget {
 
     readonly property string glyph: "\uf1e3"  // futbol (Nerd Font)
 
-    // Single-ISP mode answers "am I affected?"; aggregate keeps the n/m ratio
+    // Single-ISP mode answers "am I affected?"; explicit "all" keeps the n/m
+    // ratio; an unresolved ISP or dead feed answers with "?"
     text: root.state === "unknown" ? glyph + " ?"
       : root.activeIsp.length > 0
         ? (root.state === "blocked" ? glyph + " " + (root.own ? root.own.blocked : "") + " IPs" : glyph + " OK")
