@@ -46,8 +46,12 @@ blocking is active on Spanish ISPs, powered by https://hayahora.futbol.
   to run on the Omarchy machine at deploy time.
 - T5 (S1): Deploy to Omarchy machine and live-test (widget states, panel open,
   disable/re-enable). BLOCKED: no SSH access to the Omarchy host from this box.
-- T6 (S2,S3,S7): ISP auto-detection + manual/"all" setting + Commons.Color fix. IN PROGRESS.
-- T7: Fix the visual issues from the user's screenshot (re-attach needed).
+- T6 (S2,S3,S7): ISP auto-detection + manual/"all" setting + Commons.Color
+  aliasing fix. DONE — commit 6d4cfca; 12/12 tests (13 after T7).
+- T7: Fix the visual issues from the user's screenshot. PARTIAL — commit
+  3e4e5b5 fixes the reported overlap (header date / footer covered by text):
+  measured two-sided slots + "Updated HH:MM" short timestamp. Remaining
+  issues need the screenshot re-attach.
 
 ## Log
 
