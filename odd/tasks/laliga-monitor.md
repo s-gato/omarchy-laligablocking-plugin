@@ -106,3 +106,10 @@ blocking is active on Spanish ISPs, powered by https://hayahora.futbol.
   7ae80ae; ipapi.co third provider; console.info log line). Overlay not yet
   identified: no screenshot has ever arrived in this session; asked for
   re-attach + diagnostics (qs log, curl org) again.
+- L10 (diagnostic evidence, user): ipinfo on x390-omarchy returns org
+  "AS6739 Vodafone ONO AS" (contains 'vodafone' — matchIsp maps it), qs log
+  grep empty. Root cause found in shell sources: BarWidget base declares
+  `property var settings` and `setting(name, fallback)`; my redeclaration of
+  settings was a QML duplicate-property error — fixed in commit b16ad37 by
+  using the base reader. This explains both the 5/5 aggregate fallback and
+  likely the overlaid text (broken component binding).
