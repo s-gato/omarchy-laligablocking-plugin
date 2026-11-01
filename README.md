@@ -38,14 +38,20 @@ section of the bar.
 
 | Badge | Meaning |
 |---|---|
-The badge is a single colored glyph — no numbers:
+The badge is a single colored glyph — and it stays out of your way when
+nothing is happening:
 
 | Badge | Meaning |
 |---|---|
-| `⚽` dimmed | Nothing to worry about (your ISP, or the general situation on a VPN) |
-| `⚽` accent | General mode: some ISPs are blocking |
-| `⚽` red | Blocked — your ISP, or widespread blocking in general mode |
-| `⚽ ?` muted | Data unavailable, or your ISP not yet detected (auto-detect retries 3×; pin one with `"isp"`) |
+| *(hidden)* | Nothing above the noise floor — the widget does not render |
+| `⚽` white | Only **other** ISPs are blocking |
+| `⚽` red | **Your** ISP is blocking |
+| `⚽ ?` muted | Data unavailable, or your ISP not yet detected |
+
+**Noise floor**: an ISP blocking 5 or fewer IPs counts as not blocking —
+single collateral sites are noise, a match-day block is hundreds. The same
+threshold drives the panel and the general mode (on a VPN, the ball turns
+red only when half or more of the tracked ISPs are above the floor).
 
 Hover for both lines at once: your situation *and* the overall fraction
 ("overall 2/5 ISPs blocking"). Click for the panel: the tracking line, the

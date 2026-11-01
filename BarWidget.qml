@@ -43,17 +43,17 @@ BarWidget {
   // feed: { ok, lastUpdate, isps: [{ isp, blocked, total }], aggregate }
   property var feed: null
   readonly property var own: (feed && feed.ok && activeIsp.length > 0) ? LaLigaModel.Model.ispState(feed, activeIsp) : null
-  readonly property var total: LaLigaModel.Model.totalState(feed, activeIsp.length > 0 ? activeIsp : null)
-  // Unavailable feed, or detection still in flight, answers "unknown".
-  readonly property string state: (feed && feed.ok && detectionSettled) ? total.state : "unknown"
+  // The badge answers three ways (Model.badgeState): 'blocked' (my ISP, red),
+  // 'others' (white), 'hidden' (nothing above the noise floor), plus
+  // 'unknown' for no data or a detection still in flight.
+  readonly property var badge: LaLigaModel.Model.badgeState(feed && detectionSettled ? feed : null, activeIsp)
+  readonly property string state: badge.state
 
-  // Theme-token state colors (mirrors design/laliga-monitor):
-  // clear -> dimmed bar text, partial -> accent, blocked -> urgent,
-  // unknown -> muted.
+  // Theme-token state colors (L16): blocked -> urgent/red, others -> bar
+  // text/white, unknown -> muted. 'hidden' never renders.
   readonly property color stateColor: state === "blocked" ? (bar ? bar.urgent : Commons.Color.urgent)
-    : state === "partial" ? Commons.Color.accent
-    : state === "unknown" ? Commons.Color.muted
-    : (bar ? bar.barForeground : Commons.Color.foreground)
+    : state === "others" ? (bar ? bar.barForeground : Commons.Color.foreground)
+    : Commons.Color.muted
 
   function refresh() {
     if (!fetchProc.running) fetchProc.running = true
@@ -74,23 +74,27 @@ BarWidget {
   onStateChanged: console.info("laliga-monitor: state=" + state + " activeIsp=" + activeIsp + " ispSetting=" + ispSetting)
   onDetectedIspChanged: if (detectedIsp.length > 0) console.info("laliga-monitor: detectedIsp=" + detectedIsp)
 
-  function tooltipFor(t) {
-    var overall = (feed && feed.ok && feed.aggregate.totalIsps > 0)
-      ? " · overall " + feed.aggregate.blockedCount + "/" + feed.aggregate.totalIsps + " ISPs blocking"
-      : ""
-    if (t.state === "unknown") return "LaLiga blocking: data unavailable"
-    if (generalMode) {
-      if (t.state === "blocked") return "LaLiga blocking: widespread — " + t.blockedIsps.join(", ") + overall
-      if (t.state === "partial") return "LaLiga blocking: " + t.blockedIsps.join(", ") + overall
-      return "LaLiga blocking: no ISP is blocking (watching the general situation)" + overall
-    }
-    if (t.state === "blocked")
-      return "LaLiga blocking: " + activeIsp + " is being blocked (" + (own ? own.blocked + " of " + own.total + " IPs" : "…") + ")" + overall
-    return "LaLiga blocking: " + activeIsp + " is not being blocked" + overall
+  function tooltipFor() {
+    var b = root.badge
+    var overall = (root.feed && root.feed.ok && root.feed.aggregate.totalIsps > 0)
+      ? "overall " + root.feed.aggregate.blockedCount + "/" + root.feed.aggregate.totalIsps + " ISPs blocking"
+      : "no data"
+    if (b.state === "unknown") return "LaLiga blocking: data unavailable"
+    if (b.state === "hidden")
+      return "LaLiga blocking: nothing above the noise floor (>" + LaLigaModel.Model.NOISE_FLOOR + " IPs) — " + overall
+    if (b.state === "blocked" && b.myIsp)
+      return "LaLiga blocking: YOUR ISP " + b.myIsp + " is blocked (" + (root.own ? root.own.blocked + " IPs" : "…") + ") — " + overall
+    if (b.state === "blocked")
+      return "LaLiga blocking: widespread — " + b.blockedIsps.join(", ") + " — " + overall
+    if (b.myIsp)
+      return "LaLiga blocking elsewhere: " + b.blockedIsps.join(", ") + " — " + overall
+    return "LaLiga blocking: " + b.blockedIsps.join(", ") + " — " + overall
   }
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
+  // Hidden when nothing above the noise floor is blocking (user rule L16)
+  visible: root.state !== "hidden"
 
   onBarChanged: injectPanel()
 
@@ -245,14 +249,14 @@ BarWidget {
 
     readonly property string glyph: "\uf1e3"  // futbol (Nerd Font)
 
-    // The bar answers with one colored glyph: dim = fine, accent = partial
-    // (general mode), red = blocked, muted = no data. Detail lives in the
-    // tooltip and the panel.
+    // The bar answers with one colored glyph: white = only other ISPs
+    // blocked, red = my ISP blocked, muted "?" = no data. Hidden entirely
+    // when nothing is blocking. Detail lives in the tooltip and the panel.
     text: root.state === "unknown" ? glyph + " ?" : glyph
     foreground: root.stateColor
     active: root.state === "blocked"
-    dimmed: root.state === "clear" || root.state === "unknown"
-    tooltipText: root.tooltipFor(root.total)
+    dimmed: root.state === "unknown"
+    tooltipText: root.tooltipFor()
     onPressed: function (buttonCode) {
       if (buttonCode === Qt.LeftButton) root.toggle()
     }

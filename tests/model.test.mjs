@@ -8,57 +8,29 @@ const Model = require('../Model.js')
 // Real-shaped samples of https://hayahora.futbol/estado/data.json:
 // { lastUpdate, data: [{ ip, isp, description, stateChanges: [{ timestamp, state }] }] }
 // The last stateChange's `state` is the current one; true = blocked.
+// Under the user's noise-floor rule (L16), <= 5 blocked IPs is not blocking.
 
-const partialFeed = JSON.stringify({
-  lastUpdate: '2026-11-01 19:30:55Z',
-  data: [
-    { ip: '104.16.93.114', isp: 'Movistar', description: 'Cloudflare', stateChanges: [
-      { timestamp: '2026-10-25 20:38:50Z', state: true },
-      { timestamp: '2026-10-25 22:58:44Z', state: false },
-    ] },
-    { ip: '104.16.94.114', isp: 'Movistar', description: 'Cloudflare', stateChanges: [
-      { timestamp: '2026-10-25 20:41:12Z', state: true },
-    ] },
-    { ip: '104.16.95.114', isp: 'Movistar', description: 'Cloudflare', stateChanges: [
-      { timestamp: '2026-10-25 20:42:20Z', state: true },
-    ] },
-    { ip: '104.18.50.34', isp: 'Orange', description: 'Cloudflare R2', stateChanges: [
-      { timestamp: '2026-10-24 17:09:45Z', state: true },
-      { timestamp: '2026-10-24 22:15:51Z', state: false },
-    ] },
-    { ip: '104.18.54.45', isp: 'Vodafone', description: 'Cloudflare R2', stateChanges: [
-      { timestamp: '2026-10-31 20:34:20Z', state: true },
-      { timestamp: '2026-10-31 22:50:07Z', state: false },
-    ] },
-    { ip: '104.18.54.46', isp: 'Vodafone', description: 'Cloudflare R2', stateChanges: [
-      { timestamp: '2026-10-31 20:34:21Z', state: true },
-      { timestamp: '2026-10-31 22:50:08Z', state: false },
-    ] },
-  ],
-})
+// Build a feed: counts = { ispName: numberOfCurrentlyBlockedIPs }
+function feedWith(counts, extra = {}) {
+  return JSON.stringify({
+    lastUpdate: '2026-11-01 19:30:55Z',
+    data: Object.entries(counts).flatMap(([isp, n]) =>
+      Array.from({ length: Math.max(n, 1) }, (_, i) => ({
+        ip: `104.16.${isp.length}.${i}`,
+        isp,
+        description: 'Cloudflare',
+        stateChanges: [{ timestamp: '2026-10-25 20:00:00Z', state: true }].concat(
+          i < n ? [] : [{ timestamp: '2026-10-25 22:00:00Z', state: false }]
+        ),
+      }))
+    ).concat(extra.data || []),
+  })
+}
 
-const allBlockedFeed = JSON.stringify({
-  lastUpdate: '2026-11-01 20:58:00Z',
-  data: ['Movistar', 'Orange', 'Vodafone', 'DIGI', 'Masmovil'].map((isp, i) => ({
-    ip: `104.16.9${i}.114`, isp, description: 'Cloudflare',
-    stateChanges: [{ timestamp: '2026-11-01 20:30:00Z', state: true }],
-  })),
-})
-
+const partialFeed = feedWith({ Movistar: 6, Orange: 0, Vodafone: 0 })
+const allBlockedFeed = feedWith({ Movistar: 6, Orange: 6, Vodafone: 6, DIGI: 6, Masmovil: 6 })
 // Exactly half of the tracked ISPs blocking: the blocked threshold boundary
-const boundaryFeed = JSON.stringify({
-  lastUpdate: '2026-11-01 20:58:00Z',
-  data: [
-    ...['Movistar', 'Orange', 'Vodafone'].map((isp, i) => ({
-      ip: `104.16.9${i}.114`, isp, description: 'Cloudflare',
-      stateChanges: [{ timestamp: '2026-11-01 20:30:00Z', state: true }],
-    })),
-    ...['DIGI', 'Masmovil'].map((isp, i) => ({
-      ip: `104.18.5${i}.45`, isp, description: 'Cloudflare R2',
-      stateChanges: [{ timestamp: '2026-11-01 20:30:00Z', state: false }],
-    })),
-  ],
-})
+const boundaryFeed = feedWith({ Movistar: 6, Orange: 6, Vodafone: 6, DIGI: 0, Masmovil: 0 })
 
 test('parseFeed reads the feed and counts current blocked IPs per ISP', () => {
   const r = Model.parseFeed(partialFeed)
@@ -66,21 +38,25 @@ test('parseFeed reads the feed and counts current blocked IPs per ISP', () => {
   assert.equal(r.lastUpdate, '2026-11-01 19:30:55Z')
   const movistar = r.isps.find((x) => x.isp === 'Movistar')
   assert.deepEqual({ isp: movistar.isp, blocked: movistar.blocked, total: movistar.total },
-    { isp: 'Movistar', blocked: 2, total: 3 })
+    { isp: 'Movistar', blocked: 6, total: 6 })
   const orange = r.isps.find((x) => x.isp === 'Orange')
   assert.deepEqual({ blocked: orange.blocked, total: orange.total }, { blocked: 0, total: 1 })
   const vodafone = r.isps.find((x) => x.isp === 'Vodafone')
-  assert.deepEqual({ blocked: vodafone.blocked, total: vodafone.total }, { blocked: 0, total: 2 })
+  assert.deepEqual({ blocked: vodafone.blocked, total: vodafone.total }, { blocked: 0, total: 1 })
 })
 
 test('parseFeed: the last stateChange decides, not any past one', () => {
-  const r = Model.parseFeed(partialFeed)
-  const movistar = r.isps.find((x) => x.isp === 'Movistar')
-  // 2 of 3: the first IP was unblocked at 22:58, the other two are still blocked
-  assert.equal(movistar.blocked, 2)
+  const r = Model.parseFeed(JSON.stringify({
+    lastUpdate: 'x',
+    data: [{ ip: '1.2.3.4', isp: 'Movistar', description: 'd', stateChanges: [
+      { timestamp: 'a', state: true },
+      { timestamp: 'b', state: false },
+    ] }],
+  }))
+  assert.equal(r.isps.find((x) => x.isp === 'Movistar').blocked, 0)
 })
 
-test('aggregate: 0 blocking ISPs is clear, 1-2 is partial, half or more is blocked', () => {
+test('aggregate: 0 blocking ISPs is clear, some is partial, half or more is blocked', () => {
   assert.equal(Model.parseFeed(partialFeed).aggregate.state, 'partial') // 1 of 3
   assert.equal(Model.parseFeed(allBlockedFeed).aggregate.state, 'blocked') // 5 of 5
   assert.equal(Model.parseFeed(boundaryFeed).aggregate.state, 'blocked') // 3 of 5, the boundary
@@ -117,8 +93,8 @@ test('aggregate lists the blocking ISPs by name', () => {
 
 test('ispState answers for one ISP and null for an untracked one', () => {
   const r = Model.parseFeed(partialFeed)
-  assert.deepEqual(Model.ispState(r, 'Movistar'), { blocked: 2, total: 3, blockedNow: true })
-  assert.deepEqual(Model.ispState(r, 'Vodafone'), { blocked: 0, total: 2, blockedNow: false })
+  assert.deepEqual(Model.ispState(r, 'Movistar'), { blocked: 6, total: 6, blockedNow: true })
+  assert.deepEqual(Model.ispState(r, 'Vodafone'), { blocked: 0, total: 1, blockedNow: false })
   assert.equal(Model.ispState(r, 'Jazztel'), null)
 })
 
@@ -130,8 +106,54 @@ test('totalState: a configured ISP overrides the aggregate', () => {
   assert.equal(Model.totalState(r, 'Jazztel').state, 'unknown')
 })
 
+// ---- Noise floor + badge states (L16) ----
+
+test('NOISE_FLOOR: 5 or fewer blocked IPs is not blocking', () => {
+  assert.equal(Model.NOISE_FLOOR, 5)
+  const r = Model.parseFeed(feedWith({ Vodafone: 5, Movistar: 1, Orange: 6 }))
+  const v = r.isps.find((x) => x.isp === 'Vodafone')
+  const m = r.isps.find((x) => x.isp === 'Movistar')
+  const o = r.isps.find((x) => x.isp === 'Orange')
+  assert.equal(Model.isBlocking(v), false) // exactly at the floor
+  assert.equal(Model.isBlocking(m), false)
+  assert.equal(Model.isBlocking(o), true) // 6 > 5
+})
+
+test('aggregate respects the noise floor', () => {
+  // 3 of 5 ISPs each blocking 1 IP -> nothing is really blocking -> clear
+  assert.equal(Model.parseFeed(feedWith({ Movistar: 1, Orange: 2, Vodafone: 3, DIGI: 0, Masmovil: 0 })).aggregate.state, 'clear')
+  // Movistar 6 = blocking; one of five blocking -> partial
+  assert.equal(Model.parseFeed(feedWith({ Movistar: 6, Orange: 1, Vodafone: 0, DIGI: 0, Masmovil: 0 })).aggregate.state, 'partial')
+})
+
+test('badgeState: my ISP blocking red, only others white, none hidden', () => {
+  const myBlocked = Model.parseFeed(feedWith({ Vodafone: 6, Movistar: 6, Orange: 0, DIGI: 0, Masmovil: 0 }))
+  assert.deepEqual(Model.badgeState(myBlocked, 'Vodafone'), { state: 'blocked', myIsp: 'Vodafone', blockedIsps: ['Vodafone', 'Movistar'] })
+
+  const othersOnly = Model.parseFeed(feedWith({ Vodafone: 1, Movistar: 6, Orange: 0, DIGI: 0, Masmovil: 0 }))
+  assert.deepEqual(Model.badgeState(othersOnly, 'Vodafone'), { state: 'others', myIsp: 'Vodafone', blockedIsps: ['Movistar'] })
+
+  const quiet = Model.parseFeed(feedWith({ Vodafone: 1, Movistar: 5, Orange: 0, DIGI: 0, Masmovil: 0 }))
+  assert.deepEqual(Model.badgeState(quiet, 'Vodafone'), { state: 'hidden', myIsp: 'Vodafone', blockedIsps: [] })
+})
+
+test('badgeState: general mode (activeIsp empty) — white when some, red when half or more, hidden when none', () => {
+  const some = Model.parseFeed(feedWith({ Vodafone: 0, Movistar: 6, Orange: 0, DIGI: 0, Masmovil: 0 }))
+  assert.equal(Model.badgeState(some, '').state, 'others')
+  const widespread = Model.parseFeed(feedWith({ Vodafone: 6, Movistar: 6, Orange: 6, DIGI: 0, Masmovil: 0 }))
+  assert.equal(Model.badgeState(widespread, '').state, 'blocked')
+  const none = Model.parseFeed(feedWith({ Vodafone: 1, Movistar: 2, Orange: 0, DIGI: 0, Masmovil: 0 }))
+  assert.equal(Model.badgeState(none, '').state, 'hidden')
+})
+
+test('badgeState: unavailable feed is unknown', () => {
+  assert.equal(Model.badgeState(null, 'Vodafone').state, 'unknown')
+  assert.equal(Model.badgeState(Model.parseFeed('garbage'), '').state, 'unknown')
+})
+
+// ---- ISP detection (WAN org mapping) ----
+
 test('matchIsp maps a WAN org name to the tracked ISP label', () => {
-  // The five networks hayahora probes, as Spanish WAN orgs name themselves
   assert.equal(Model.matchIsp('Telefonica de Espana SAU'), 'Movistar')
   assert.equal(Model.matchIsp('Telefónica Móviles España'), 'Movistar')
   assert.equal(Model.matchIsp('Orange Espana SA'), 'Orange')
@@ -153,11 +175,12 @@ test('matchIsp answers null for untracked or empty orgs', () => {
   assert.equal(Model.matchIsp(undefined), null)
 })
 
-test('formatTime shortens the feed timestamp to HH:MM', () => {
-  assert.equal(Model.formatTime('2026-11-01 19:30:55Z'), '19:30')
-  assert.equal(Model.formatTime('2026-11-01 9:05:00Z'), '9:05')
-  assert.equal(Model.formatTime(''), '')
-  assert.equal(Model.formatTime('garbage'), 'garbage') // pass through, never invent
+test('isKnownIsp validates a user-provided setting and canonicalizes it', () => {
+  assert.equal(Model.isKnownIsp('Movistar'), 'Movistar')
+  assert.equal(Model.isKnownIsp('movistar'), 'Movistar') // case-insensitive
+  assert.equal(Model.isKnownIsp('Jazztel'), false)
+  assert.equal(Model.isKnownIsp('all'), false)
+  assert.equal(Model.isKnownIsp(null), false)
 })
 
 test('orgFromLookup extracts the org field from IP-lookup bodies', () => {
@@ -168,10 +191,9 @@ test('orgFromLookup extracts the org field from IP-lookup bodies', () => {
   assert.equal(Model.orgFromLookup('{"org":null}', 'org'), '')
 })
 
-test('isKnownIsp validates a user-provided setting and canonicalizes it', () => {
-  assert.equal(Model.isKnownIsp('Movistar'), 'Movistar')
-  assert.equal(Model.isKnownIsp('movistar'), 'Movistar') // case-insensitive
-  assert.equal(Model.isKnownIsp('Jazztel'), false)
-  assert.equal(Model.isKnownIsp('all'), false)
-  assert.equal(Model.isKnownIsp(null), false)
+test('formatTime shortens the feed timestamp to HH:MM', () => {
+  assert.equal(Model.formatTime('2026-11-01 19:30:55Z'), '19:30')
+  assert.equal(Model.formatTime('2026-11-01 9:05:00Z'), '9:05')
+  assert.equal(Model.formatTime(''), '')
+  assert.equal(Model.formatTime('garbage'), 'garbage') // pass through, never invent
 })

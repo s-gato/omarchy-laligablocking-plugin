@@ -26,6 +26,14 @@ var Model = {
   // The five ISPs hayahora probes, in their exact label spelling
   KNOWN_ISPS: ['Movistar', 'Orange', 'Vodafone', 'DIGI', 'Masmovil'],
 
+  // An ISP blocking 5 or fewer IPs is noise (single collateral sites), not a
+  // match-day block: below-or-equal counts as not blocking everywhere.
+  NOISE_FLOOR: 5,
+
+  isBlocking: function (entry) {
+    return !!entry && entry.blocked > this.NOISE_FLOOR
+  },
+
   // Map a WAN org name (public-IP ASN/org lookup, e.g. ipinfo.io "org") to
   // the tracked ISP label. Blocks are applied at network level, so MVNOs
   // riding a tracked network map to their host network. Answers null when
@@ -138,7 +146,7 @@ var Model = {
     }
     var blockedIsps = []
     for (var i = 0; i < isps.length; i++) {
-      if (isps[i].blocked > 0) blockedIsps.push(isps[i].isp)
+      if (this.isBlocking(isps[i])) blockedIsps.push(isps[i].isp)
     }
     var n = isps.length
     var state = blockedIsps.length === 0 ? 'clear'
@@ -166,9 +174,39 @@ var Model = {
     if (configuredIsp) {
       var own = this.ispState(feed, configuredIsp)
       if (!own) return { state: 'unknown', blockedIsps: [], blockedCount: 0, totalIsps: 0 }
-      return { state: own.blockedNow ? 'blocked' : 'clear', blockedIsps: [configuredIsp], blockedCount: own.blockedNow ? 1 : 0, totalIsps: 1 }
+      return { state: this.isBlocking(own) ? 'blocked' : 'clear', blockedIsps: [configuredIsp], blockedCount: own.blockedNow ? 1 : 0, totalIsps: 1 }
     }
     return feed.aggregate
+  },
+
+  // The badge's three-state answer (L16): 'blocked' when MY ISP is blocking
+  // (red), 'others' when only other ISPs are (white), 'hidden' when nothing
+  // above the noise floor is blocking (widget hidden). General mode —
+  // empty activeIsp, i.e. "all" or a VPN/untracked network — watches the
+  // overall situation: 'others' when some ISPs block, 'blocked' when half or
+  // more do. Unavailable feed answers 'unknown'.
+  badgeState: function (feed, activeIsp) {
+    if (!feed || !feed.ok) {
+      return { state: 'unknown', myIsp: activeIsp || null, blockedIsps: [] }
+    }
+    var blocking = []
+    for (var i = 0; i < feed.isps.length; i++) {
+      if (this.isBlocking(feed.isps[i])) blocking.push(feed.isps[i].isp)
+    }
+    if (!activeIsp) {
+      var general = blocking.length === 0 ? 'hidden'
+        : (blocking.length * 2 >= feed.isps.length ? 'blocked' : 'others')
+      return { state: general, myIsp: null, blockedIsps: blocking }
+    }
+    var mine = false
+    for (var j = 0; j < blocking.length; j++) {
+      if (blocking[j] === activeIsp) { mine = true; break }
+    }
+    return {
+      state: mine ? 'blocked' : (blocking.length > 0 ? 'others' : 'hidden'),
+      myIsp: activeIsp,
+      blockedIsps: blocking,
+    }
   },
 }
 

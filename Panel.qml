@@ -128,7 +128,7 @@ Panel {
           width: parent.width
           height: Math.max(dot.width, rowLabel.implicitHeight) + 6
 
-          readonly property bool hit: modelData.blocked > 0
+          readonly property bool hit: LaLigaModel.Model.isBlocking(modelData)
 
           Rectangle {
             id: dot
