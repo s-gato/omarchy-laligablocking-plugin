@@ -32,14 +32,18 @@ The widget appears in the right section of the bar. `jq` is not required;
 
 | Badge | Meaning |
 |---|---|
-| `⚽ OK` (dimmed) | Your ISP is not being blocked right now |
-| `⚽ 3 IPs` (urgent/red) | Your ISP is blocking — N IPs currently blocked |
-| `⚽ 1/5`–`⚽ 3/5` (accent/urgent) | "all" mode: fraction of tracked ISPs blocking |
-| `⚽ ?` (muted) | Data unavailable, or your ISP not yet detected (auto-detect retries 3×; pin one with `"isp"`) |
+The badge is a single colored glyph — no numbers:
 
-Click the widget for the panel: your ISP's row (blocked-IP count), the
-tracking line (which ISP is watched and how it was chosen), and the overall
-fraction across all tracked ISPs in the footer.
+| Badge | Meaning |
+|---|---|
+| `⚽` dimmed | Nothing to worry about (your ISP, or the general situation on a VPN) |
+| `⚽` accent | General mode: some ISPs are blocking |
+| `⚽` red | Blocked — your ISP, or widespread blocking in general mode |
+| `⚽ ?` muted | Data unavailable, or your ISP not yet detected (auto-detect retries 3×; pin one with `"isp"`) |
+
+Hover for both lines at once: your situation *and* the overall fraction
+("overall 2/5 ISPs blocking"). Click for the panel: the tracking line, the
+full per-ISP table (general picture, always), and the feed timestamp.
 
 ## Which ISP is tracked: auto-detected by default
 
@@ -50,9 +54,10 @@ of them:
   your public IP (ipinfo.io → ifconfig.co → ipapi.co; tiny requests, retried
   3×, re-checked every 6 h) and maps it to one of the tracked ISPs. The
   mapping is network-level, so MVNOs resolve to their host network
-  (Pepephone/Yoigo/Lebara → Masmovil, Jazztel → Orange). If your network is
-  not one of the five tracked ones, the badge answers `?` and the panel
-  tells you — it never shows an aggregate you did not ask for.
+  (Pepephone/Yoigo/Lebara → Masmovil, Jazztel → Orange). On a VPN or any
+  untracked network the widget switches to the **general situation**: the
+  ball turns red when half or more of the tracked ISPs are blocking — so you
+  still know when a match-day blackout is underway.
 - **`"isp": "Movistar"`** — pin it manually: `Movistar`, `Orange`,
   `Vodafone`, `DIGI`, `Masmovil` (case-insensitive).
 - **`"isp": "all"`** — opt in to the aggregate view over every tracked ISP.
