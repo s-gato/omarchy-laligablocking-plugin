@@ -14,14 +14,14 @@ BarWidget {
   //   { "id": "sergio.laliga-monitor", "isp": "Movistar", "intervalSeconds": 300 }
   // isp: "auto" (default) detects your ISP from the WAN org; "all" tracks
   // every ISP hayahora probes; or name one: Movistar, Orange, Vodafone,
-  // DIGI, Masmovil.
-  property var settings: ({})
+  // DIGI, Masmovil. The BarWidget base owns `settings` and setting(); do
+  // not redeclare them here — the base already injects them from the host.
   property int intervalSeconds: {
-    var v = parseInt(settings.intervalSeconds, 10)
+    var v = parseInt(setting("intervalSeconds", 300), 10)
     return (isFinite(v) && v >= 120) ? v : 300
   }
   property string ispSetting: {
-    var s = String(settings.isp === undefined ? "auto" : settings.isp).toLowerCase()
+    var s = String(setting("isp", "auto")).toLowerCase()
     if (s === "all") return "all"
     var known = LaLigaModel.Model.isKnownIsp(s)
     return known || "auto"
