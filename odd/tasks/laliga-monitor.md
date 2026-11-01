@@ -120,3 +120,10 @@ blocking is active on Spanish ISPs, powered by https://hayahora.futbol.
   5c44087 with literal pixel values. Style.font.* resolves fine and stays.
   setBarWidget requires 4 args: setBarWidget <id> <key> <valueJson> '{}' —
   corrected command handed to the user.
+- L12 (user feedback, verbatim): "still seeing 5/5" — aggregate badge appeared
+  whenever any auto-detection attempt failed (no retry, silent fallback).
+  Fixed in 2ebca47: aggregate only when isp:"all" is explicit; unresolved ISP
+  answers "?" (muted) with a 3x/60s retry before giving up; state decisions
+  logged (state/activeIsp/ispSetting); declared the missing `own` property.
+  Immediate user unblock: setBarWidget sergio.laliga-monitor isp '"Vodafone"' '{}'
+  (4th arg selectorJson required).
