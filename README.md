@@ -35,7 +35,7 @@ The widget appears in the right section of the bar. `jq` is not required;
 | `⚽ OK` (dimmed) | Your ISP is not being blocked right now |
 | `⚽ 3 IPs` (urgent/red) | Your ISP is blocking — N IPs currently blocked |
 | `⚽ 1/5`–`⚽ 3/5` (accent/urgent) | "all" mode: fraction of tracked ISPs blocking |
-| `⚽ ?` (muted) | Data unavailable (feed unreachable or malformed) |
+| `⚽ ?` (muted) | Data unavailable, or your ISP not yet detected (auto-detect retries 3×; pin one with `"isp"`) |
 
 Click the widget for the panel: your ISP's row (blocked-IP count), the
 tracking line (which ISP is watched and how it was chosen), and the overall
@@ -47,11 +47,12 @@ A network is blocked by one ISP, so the widget watches **your** ISP, not all
 of them:
 
 - **`"isp": "auto"` (default)** — at startup the widget looks up the org of
-  your public IP (ipinfo.io, falling back to ifconfig.co; two tiny requests,
-  re-checked every 6 h) and maps it to one of the tracked ISPs. The mapping
-  is network-level, so MVNOs resolve to their host network (Pepephone/Yoigo/
-  Lebara → Masmovil, Jazztel → Orange). If your network is not one of the
-  five tracked ones, it falls back to aggregate mode and the panel tells you.
+  your public IP (ipinfo.io → ifconfig.co → ipapi.co; tiny requests, retried
+  3×, re-checked every 6 h) and maps it to one of the tracked ISPs. The
+  mapping is network-level, so MVNOs resolve to their host network
+  (Pepephone/Yoigo/Lebara → Masmovil, Jazztel → Orange). If your network is
+  not one of the five tracked ones, the badge answers `?` and the panel
+  tells you — it never shows an aggregate you did not ask for.
 - **`"isp": "Movistar"`** — pin it manually: `Movistar`, `Orange`,
   `Vodafone`, `DIGI`, `Masmovil` (case-insensitive).
 - **`"isp": "all"`** — opt in to the aggregate view over every tracked ISP.
