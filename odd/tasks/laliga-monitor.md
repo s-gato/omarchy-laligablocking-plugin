@@ -133,3 +133,10 @@ blocking is active on Spanish ISPs, powered by https://hayahora.futbol.
   compiled QML surviving the file-watch reload. Omarchy's shell-dev guide
   prescribes `omarchy-restart-shell` after QML changes; handed to user as the
   decisive step.
+- L14 (user feedback, verbatim): "this is working now, I do not need the
+  number of IPs in the bar  + if let's say I'm using a VPN and therefore on a
+  different ISP, I still want to know when things are blocked generally" —
+  S2 rewritten: badge is the state glyph only (no counts); auto mode watches
+  the detected ISP when tracked, and the general situation when the network
+  is untracked (VPN). S3 rewritten: panel always shows the full per-ISP
+  table; tooltip always includes the overall fraction.
