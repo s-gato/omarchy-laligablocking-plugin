@@ -26,7 +26,7 @@
       {
         "key": "isp",
         "type": "string",
-        "label": "Your ISP (optional: Movistar, Orange, Vodafone, DIGI, Masmovil)"
+        "label": "Your ISP: auto (default) | all | Movistar, Orange, Vodafone, DIGI, Masmovil"
       }
     ]
   }

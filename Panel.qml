@@ -1,6 +1,6 @@
 import QtQuick
 import Quickshell
-import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 
 Panel {
@@ -11,8 +11,11 @@ Panel {
   property var anchorItem: null
   property var hostWidget: null
 
-  // Live feed from the bar widget (injected via hostWidget)
+  // Live state from the bar widget (injected via hostWidget)
   readonly property var feed: hostWidget ? hostWidget.feed : null
+  readonly property string activeIsp: hostWidget ? hostWidget.activeIsp : ""
+  readonly property bool aggregateMode: hostWidget ? hostWidget.aggregateMode : true
+  readonly property string ispSetting: hostWidget ? hostWidget.ispSetting : "auto"
 
   function open() {
     root.controller.show()
@@ -26,6 +29,28 @@ Panel {
     if (root.bar && typeof root.bar.switchPanelFrom === "function")
       return root.bar.switchPanelFrom(root.hostWidget || root, direction)
     return false
+  }
+
+  // In single-ISP mode the rows answer for your ISP; aggregate shows everyone
+  readonly property var rowModel: {
+    if (!feed || !feed.ok) return []
+    if (!aggregateMode && activeIsp.length > 0) {
+      var own = null
+      for (var i = 0; i < feed.isps.length; i++) {
+        if (feed.isps[i].isp === activeIsp) { own = feed.isps[i]; break }
+      }
+      return own ? [own] : []
+    }
+    return feed.isps
+  }
+
+  // What to tell the user about which ISP is being watched
+  readonly property string trackingLine: {
+    if (!aggregateMode && activeIsp.length > 0)
+      return "Tracking: " + activeIsp + (ispSetting === "auto" ? " (auto-detected)" : "")
+    if (ispSetting === "auto")
+      return "Your ISP was not detected — showing all. Set \"isp\" in settings."
+    return "Tracking: all ISPs hayahora probes"
   }
 
   KeyboardPanel {
@@ -67,10 +92,22 @@ Panel {
           anchors.right: parent.right
           anchors.baseline: headerText.baseline
           text: root.feed && root.feed.ok ? root.feed.lastUpdate : ""
-          color: Color.muted
+          color: Commons.Color.muted
           font.family: root.bar ? root.bar.fontFamily : Style.font.family
           font.pixelSize: Style.font.small
         }
+      }
+
+      // ---- Tracking line ----
+      Text {
+        width: parent.width
+        text: root.trackingLine
+        color: Commons.Color.muted
+        font.family: root.bar ? root.bar.fontFamily : Style.font.family
+        font.pixelSize: Style.font.small
+        elide: Text.ElideRight
+        fontSizeMode: Text.HorizontalFit
+        renderTypeQuality: Text.HighQuality
       }
 
       // ---- Data unavailable ----
@@ -78,7 +115,7 @@ Panel {
         width: parent.width
         visible: !root.feed || !root.feed.ok
         text: "Data unavailable. Retrying on the next poll."
-        color: Color.muted
+        color: Commons.Color.muted
         font.family: root.bar ? root.bar.fontFamily : Style.font.family
         font.pixelSize: Style.font.body
         wrapMode: Text.WordWrap
@@ -86,12 +123,12 @@ Panel {
 
       // ---- Per-ISP rows ----
       Repeater {
-        model: root.feed && root.feed.ok ? root.feed.isps : []
+        model: root.rowModel
 
         delegate: Item {
           required property var modelData
           width: parent.width
-          height: Math.max(dot.implicitHeight, rowLabel.implicitHeight) + Style.space(6)
+          height: Math.max(dot.width, rowLabel.implicitHeight) + Style.space(6)
 
           readonly property bool hit: modelData.blocked > 0
 
@@ -102,7 +139,7 @@ Panel {
             width: Style.space(8)
             height: width
             radius: width / 2
-            color: hit ? Color.urgent : Color.muted
+            color: hit ? Commons.Color.urgent : Commons.Color.muted
             opacity: hit ? 1.0 : 0.55
           }
 
@@ -121,7 +158,7 @@ Panel {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             text: hit ? modelData.blocked + " IPs" : "No blocking"
-            color: hit ? Color.urgent : Color.muted
+            color: hit ? Commons.Color.urgent : Commons.Color.muted
             font.family: root.bar ? root.bar.fontFamily : Style.font.family
             font.pixelSize: Style.font.small
             font.bold: hit
@@ -138,7 +175,7 @@ Panel {
           anchors.bottom: parent.bottom
           anchors.left: parent.left
           text: "Data: hayahora.futbol"
-          color: Color.muted
+          color: Commons.Color.muted
           font.family: root.bar ? root.bar.fontFamily : Style.font.family
           font.pixelSize: Style.font.small
         }

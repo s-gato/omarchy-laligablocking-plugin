@@ -46,6 +46,8 @@ blocking is active on Spanish ISPs, powered by https://hayahora.futbol.
   to run on the Omarchy machine at deploy time.
 - T5 (S1): Deploy to Omarchy machine and live-test (widget states, panel open,
   disable/re-enable). BLOCKED: no SSH access to the Omarchy host from this box.
+- T6 (S2,S3,S7): ISP auto-detection + manual/"all" setting + Commons.Color fix. IN PROGRESS.
+- T7: Fix the visual issues from the user's screenshot (re-attach needed).
 
 ## Log
 
@@ -82,3 +84,14 @@ blocking is active on Spanish ISPs, powered by https://hayahora.futbol.
   https://proxmox-ubuntu.wombat-peacock.ts.net/ (tailnet-only; raw IP fails
   TLS, use the full ts.net name). Install one-liner handed to the user to run
   on x390-omarchy; after install, qmllint + live checks still to observe.
+- L7 (user feedback, verbatim): "this is the screenshot, a number of visual
+  issues. It does not make sense to see all ISPs, you're usually a client of
+  one or at least a network will have 1 ISP. Let's research how to set-up
+  autodetection or manual selection in settings" — S2/S3 rewritten (T6),
+  visual issues = T7 (screenshot not received in-session; awaiting re-attach).
+- L8: Settings plumbing verified from the shell sources: settings are inline
+  keys on the bar layout entry ({ "id": ..., "isp": "Movistar" }) injected as
+  the widget's `settings` property; IPC `setBarWidget <id> <key> <valueJson>`
+  can change them live. Qt 6.12 shadows the `Color` name: shell docs require
+  `import qs.Commons as Commons` + `Commons.Color` — fixed in both QML files
+  (likely one of the reported visual issues).

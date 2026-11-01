@@ -32,25 +32,50 @@ The widget appears in the right section of the bar. `jq` is not required;
 
 | Badge | Meaning |
 |---|---|
-| `⚽ 0/5` (dimmed) | No tracked ISP is blocking right now |
-| `⚽ 1/5`–`⚽ 2/5` (accent) | Blocking on some ISPs — check the panel |
-| `⚽ 3/5`+ (urgent/red) | Blocking on half or more of the tracked ISPs |
+| `⚽ OK` (dimmed) | Your ISP is not being blocked right now |
+| `⚽ 3 IPs` (urgent/red) | Your ISP is blocking — N IPs currently blocked |
+| `⚽ 1/5`–`⚽ 3/5` (accent/urgent) | "all" mode: fraction of tracked ISPs blocking |
 | `⚽ ?` (muted) | Data unavailable (feed unreachable or malformed) |
 
-Click the widget for the panel: per-ISP breakdown (Movistar, Orange,
-Vodafone, DIGI, Masmovil) with the number of IPs currently blocked, plus the
-feed's last update time.
+Click the widget for the panel: your ISP's row (blocked-IP count), the
+tracking line (which ISP is watched and how it was chosen), and the overall
+fraction across all tracked ISPs in the footer.
 
-## Configure
+## Which ISP is tracked: auto-detected by default
+
+A network is blocked by one ISP, so the widget watches **your** ISP, not all
+of them:
+
+- **`"isp": "auto"` (default)** — at startup the widget looks up the org of
+  your public IP (ipinfo.io, falling back to ifconfig.co; two tiny requests,
+  re-checked every 6 h) and maps it to one of the tracked ISPs. The mapping
+  is network-level, so MVNOs resolve to their host network (Pepephone/Yoigo/
+  Lebara → Masmovil, Jazztel → Orange). If your network is not one of the
+  five tracked ones, it falls back to aggregate mode and the panel tells you.
+- **`"isp": "Movistar"`** — pin it manually: `Movistar`, `Orange`,
+  `Vodafone`, `DIGI`, `Masmovil` (case-insensitive).
+- **`"isp": "all"`** — opt in to the aggregate view over every tracked ISP.
+
+### Configure
+
+Settings are inline keys on the widget's bar entry in
+`~/.config/omarchy/shell.json`:
+
+```jsonc
+"bar": {
+  "layout": {
+    "right": [ { "id": "sergio.laliga-monitor", "isp": "Movistar" } ]
+  }
+}
+```
+
+Omitted keys fall back to `intervalSeconds: 300`, `isp: "auto"`. The shell
+reloads `shell.json` live; the plugin also auto-reloads when you edit its
+files.
 
 - **Poll interval** — default 300 s. hayahora.futbol runs community
   measurements and asks users to avoid unnecessary queries; please keep the
   interval at 120 s or above.
-- **Your ISP** — optional. Set it (e.g. `Movistar`) and the bar answers
-  "am I affected?" for that ISP instead of the aggregate.
-
-Both live in the manifest's `barWidget.defaults` block
-(`intervalSeconds`, `isp`).
 
 ## Data source and limits
 

@@ -129,3 +129,42 @@ test('totalState: a configured ISP overrides the aggregate', () => {
   assert.equal(Model.totalState(r, 'Vodafone').state, 'clear')
   assert.equal(Model.totalState(r, 'Jazztel').state, 'unknown')
 })
+
+test('matchIsp maps a WAN org name to the tracked ISP label', () => {
+  // The five networks hayahora probes, as Spanish WAN orgs name themselves
+  assert.equal(Model.matchIsp('Telefonica de Espana SAU'), 'Movistar')
+  assert.equal(Model.matchIsp('Telefónica Móviles España'), 'Movistar')
+  assert.equal(Model.matchIsp('Orange Espana SA'), 'Orange')
+  assert.equal(Model.matchIsp('MASORANGE ESPAÑA S.L.'), 'Orange') // merged entity
+  assert.equal(Model.matchIsp('Jazztel SA'), 'Orange') // Orange group
+  assert.equal(Model.matchIsp('VODAFONE ESPANA, S.A.U.'), 'Vodafone')
+  assert.equal(Model.matchIsp('Digi Spain Telecom S.L.'), 'DIGI')
+  assert.equal(Model.matchIsp('MASMOVIL IBERCOM SA'), 'Masmovil')
+  assert.equal(Model.matchIsp('MásMóvil'), 'Masmovil')
+  assert.equal(Model.matchIsp('Pepephone'), 'Masmovil') // MVNO on MasMóvil net
+  assert.equal(Model.matchIsp('YOIGO ESPAÑA'), 'Masmovil') // MVNO on MasMóvil net
+  assert.equal(Model.matchIsp('Lebara'), 'Masmovil') // MVNO on MasMóvil net
+})
+
+test('matchIsp answers null for untracked or empty orgs', () => {
+  assert.equal(Model.matchIsp('Starlink Spain'), null)
+  assert.equal(Model.matchIsp(''), null)
+  assert.equal(Model.matchIsp(null), null)
+  assert.equal(Model.matchIsp(undefined), null)
+})
+
+test('orgFromLookup extracts the org field from IP-lookup bodies', () => {
+  assert.equal(Model.orgFromLookup('{"ip":"1.2.3.4","org":"Telefonica de Espana SAU"}', 'org'), 'Telefonica de Espana SAU')
+  assert.equal(Model.orgFromLookup('{"asn_org":"Digi Spain Telecom S.L."}', 'asn_org'), 'Digi Spain Telecom S.L.')
+  assert.equal(Model.orgFromLookup('not json', 'org'), '')
+  assert.equal(Model.orgFromLookup('{}', 'org'), '')
+  assert.equal(Model.orgFromLookup('{"org":null}', 'org'), '')
+})
+
+test('isKnownIsp validates a user-provided setting and canonicalizes it', () => {
+  assert.equal(Model.isKnownIsp('Movistar'), 'Movistar')
+  assert.equal(Model.isKnownIsp('movistar'), 'Movistar') // case-insensitive
+  assert.equal(Model.isKnownIsp('Jazztel'), false)
+  assert.equal(Model.isKnownIsp('all'), false)
+  assert.equal(Model.isKnownIsp(null), false)
+})
