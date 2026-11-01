@@ -146,3 +146,9 @@ blocking is active on Spanish ISPs, powered by https://hayahora.futbol.
   (HTTPS remote via gh auth; SSH remote had no key). Repo is PRIVATE —
   visibility flip to public pending user decision (needed for
   `omarchy plugin add` from other machines and for the marketplace).
+- L16 (user feedback, verbatim): "I want the badge to work in the following
+  way: my ISP blocked red, anyother ISP white, no ISPs blocked at all hidden.
+  for example, 1 ip is blocked in vodafone right now, I consider this a non
+  block. Let's use 5 or less IPs, not blocking" — S2 rewritten: badge states
+  red/white/hidden with NOISE_FLOOR 5 (blocked <= 5 = not blocking); panel
+  and aggregate use the same threshold.
