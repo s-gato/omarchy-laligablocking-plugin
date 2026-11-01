@@ -16,9 +16,8 @@ Panel {
   // Live state from the bar widget (injected via hostWidget)
   readonly property var feed: hostWidget ? hostWidget.feed : null
   readonly property string activeIsp: hostWidget ? hostWidget.activeIsp : ""
-  readonly property bool ispResolved: hostWidget ? hostWidget.ispResolved : true
+  readonly property bool generalMode: hostWidget ? hostWidget.generalMode : false
   readonly property string ispSetting: hostWidget ? hostWidget.ispSetting : "auto"
-  readonly property bool aggregateMode: ispSetting === "all"
 
   function open() {
     root.controller.show()
@@ -34,25 +33,16 @@ Panel {
     return false
   }
 
-  // In single-ISP mode the rows answer for your ISP; aggregate shows everyone
-  readonly property var rowModel: {
-    if (!feed || !feed.ok) return []
-    if (!aggregateMode && activeIsp.length > 0) {
-      var own = null
-      for (var i = 0; i < feed.isps.length; i++) {
-        if (feed.isps[i].isp === activeIsp) { own = feed.isps[i]; break }
-      }
-      return own ? [own] : []
-    }
-    return feed.isps
-  }
+  // The panel is the general picture: every tracked ISP, always
+  readonly property var rowModel: (feed && feed.ok) ? feed.isps : []
 
-  // What to tell the user about which ISP is being watched
+  // What to tell the user about which situation the bar is watching
   readonly property string trackingLine: {
-    if (aggregateMode) return "Tracking: all ISPs hayahora probes"
+    if (ispSetting === "all") return "Tracking: all ISPs (general situation)"
+    if (generalMode) return "VPN or untracked network — watching the general situation"
     if (activeIsp.length > 0)
       return "Tracking: " + activeIsp + (ispSetting === "auto" ? " (auto-detected)" : "")
-    return "Your ISP was not detected — set \"isp\" in settings."
+    return "Detecting your ISP…"
   }
 
   KeyboardPanel {

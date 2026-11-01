@@ -29,22 +29,23 @@ BarWidget {
 
   // ---- ISP resolution ----
   // detectedIsp: "" = lookup in flight, "none" = looked up and untracked.
-  // Aggregate (all ISPs) only when explicitly requested: an unresolved ISP
-  // shows "?" instead of pretending to know (auto-detect retries 3x before
-  // giving up).
+  // generalMode ("all", or a VPN/untracked exit network) watches the overall
+  // situation across all tracked ISPs; otherwise the bar answers for one ISP.
+  // Aggregate is never shown as a silent fallback: an untracked network is a
+  // deliberate, logged general mode (see the panel's tracking line).
   property string detectedIsp: ""
   property int _detectAttempts: 0
-  readonly property bool ispResolved: ispSetting !== "auto" || (detectedIsp.length > 0 && detectedIsp !== "none")
-  readonly property string activeIsp: ispSetting === "all" ? "" : (ispSetting === "auto" ? (detectedIsp === "none" ? "" : detectedIsp) : ispSetting)
+  readonly property bool generalMode: ispSetting === "all" || (ispSetting === "auto" && detectedIsp === "none")
+  readonly property bool detectionSettled: ispSetting !== "auto" || detectedIsp.length > 0
+  readonly property string activeIsp: generalMode ? "" : (ispSetting === "auto" ? detectedIsp : ispSetting)
 
   // ---- Feed state ----
   // feed: { ok, lastUpdate, isps: [{ isp, blocked, total }], aggregate }
   property var feed: null
   readonly property var own: (feed && feed.ok && activeIsp.length > 0) ? LaLigaModel.Model.ispState(feed, activeIsp) : null
   readonly property var total: LaLigaModel.Model.totalState(feed, activeIsp.length > 0 ? activeIsp : null)
-  // Unresolved ISP or unavailable feed both answer "unknown": the badge
-  // never shows data it cannot stand behind.
-  readonly property string state: ispResolved ? total.state : "unknown"
+  // Unavailable feed, or detection still in flight, answers "unknown".
+  readonly property string state: (feed && feed.ok && detectionSettled) ? total.state : "unknown"
 
   // Theme-token state colors (mirrors design/laliga-monitor):
   // clear -> dimmed bar text, partial -> accent, blocked -> urgent,
@@ -74,17 +75,18 @@ BarWidget {
   onDetectedIspChanged: if (detectedIsp.length > 0) console.info("laliga-monitor: detectedIsp=" + detectedIsp)
 
   function tooltipFor(t) {
+    var overall = (feed && feed.ok && feed.aggregate.totalIsps > 0)
+      ? " · overall " + feed.aggregate.blockedCount + "/" + feed.aggregate.totalIsps + " ISPs blocking"
+      : ""
     if (t.state === "unknown") return "LaLiga blocking: data unavailable"
-    if (activeIsp.length > 0) {
-      if (t.state === "blocked")
-        return "LaLiga blocking: " + activeIsp + " is being blocked (" + (own ? own.blocked + " of " + own.total + " IPs" : "…") + ")"
-      return "LaLiga blocking: " + activeIsp + " is not being blocked"
+    if (generalMode) {
+      if (t.state === "blocked") return "LaLiga blocking: widespread — " + t.blockedIsps.join(", ") + overall
+      if (t.state === "partial") return "LaLiga blocking: " + t.blockedIsps.join(", ") + overall
+      return "LaLiga blocking: no ISP is blocking (watching the general situation)" + overall
     }
-    if (t.state === "clear") return "LaLiga blocking: none of the tracked ISPs is blocking"
-    var names = t.blockedIsps.join(", ")
     if (t.state === "blocked")
-      return "LaLiga blocking: " + names + " (" + t.blockedCount + " of " + t.totalIsps + " tracked ISPs)"
-    return "LaLiga blocking: " + names + " (partial)"
+      return "LaLiga blocking: " + activeIsp + " is being blocked (" + (own ? own.blocked + " of " + own.total + " IPs" : "…") + ")" + overall
+    return "LaLiga blocking: " + activeIsp + " is not being blocked" + overall
   }
 
   implicitWidth: button.implicitWidth
@@ -243,12 +245,10 @@ BarWidget {
 
     readonly property string glyph: "\uf1e3"  // futbol (Nerd Font)
 
-    // Single-ISP mode answers "am I affected?"; explicit "all" keeps the n/m
-    // ratio; an unresolved ISP or dead feed answers with "?"
-    text: root.state === "unknown" ? glyph + " ?"
-      : root.activeIsp.length > 0
-        ? (root.state === "blocked" ? glyph + " " + (root.own ? root.own.blocked : "") + " IPs" : glyph + " OK")
-        : glyph + " " + root.total.blockedCount + "/" + root.total.totalIsps
+    // The bar answers with one colored glyph: dim = fine, accent = partial
+    // (general mode), red = blocked, muted = no data. Detail lives in the
+    // tooltip and the panel.
+    text: root.state === "unknown" ? glyph + " ?" : glyph
     foreground: root.stateColor
     active: root.state === "blocked"
     dimmed: root.state === "clear" || root.state === "unknown"
