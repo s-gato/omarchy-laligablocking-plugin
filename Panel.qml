@@ -62,7 +62,7 @@ Panel {
     bar: root.bar
     open: root.opened
     focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(250))
+    contentWidth: panel.fittedContentWidth(250)
     contentHeight: panel.fittedContentHeight(content.implicitHeight)
 
     PanelKeyCatcher {
@@ -75,7 +75,7 @@ Panel {
     Column {
       id: content
       width: parent.width
-      spacing: Style.space(4)
+      spacing: 4
 
       // ---- Header ----
       // Two-sided slots: the right side is measured first, the left elides
@@ -98,7 +98,7 @@ Panel {
           id: headerText
           anchors.left: parent.left
           anchors.verticalCenter: parent.verticalCenter
-          width: parent.width - updatedText.implicitWidth - Style.space(12)
+          width: parent.width - updatedText.implicitWidth - 12
           text: "LaLiga blocking"
           color: root.barForeground
           font.family: root.bar ? root.bar.fontFamily : Style.font.family
@@ -136,7 +136,7 @@ Panel {
         delegate: Item {
           required property var modelData
           width: parent.width
-          height: Math.max(dot.width, rowLabel.implicitHeight) + Style.space(6)
+          height: Math.max(dot.width, rowLabel.implicitHeight) + 6
 
           readonly property bool hit: modelData.blocked > 0
 
@@ -144,7 +144,7 @@ Panel {
             id: dot
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            width: Style.space(8)
+            width: 8
             height: width
             radius: width / 2
             color: hit ? Commons.Color.urgent : Commons.Color.muted
@@ -154,7 +154,7 @@ Panel {
           Text {
             id: rowLabel
             anchors.left: dot.right
-            anchors.leftMargin: Style.space(9)
+            anchors.leftMargin: 9
             anchors.verticalCenter: parent.verticalCenter
             text: modelData.isp
             color: root.barForeground
@@ -178,7 +178,7 @@ Panel {
       // Same two-sided slot as the header: measured right side, eliding left
       Item {
         width: parent.width
-        height: Math.max(footerText.implicitHeight, footerCount.implicitHeight) + Style.space(4)
+        height: Math.max(footerText.implicitHeight, footerCount.implicitHeight) + 4
 
         Text {
           id: footerCount
@@ -196,7 +196,7 @@ Panel {
           id: footerText
           anchors.left: parent.left
           anchors.verticalCenter: parent.verticalCenter
-          width: parent.width - footerCount.implicitWidth - Style.space(12)
+          width: parent.width - footerCount.implicitWidth - 12
           text: "Data: hayahora.futbol"
           color: Commons.Color.muted
           font.family: root.bar ? root.bar.fontFamily : Style.font.family
