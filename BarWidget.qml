@@ -110,7 +110,27 @@ BarWidget {
   }
 
   // ---- ISP auto-detection (auto mode only; a couple of tiny requests at
-  // startup and every 6h) ----
+  // startup and every 6h). Result is collected on exit (not on stream end,
+  // which races with running/exitCode) and logged for debugging: see
+  // `qs log -p "$OMARCHY_PATH/shell" --tail 100`. ----
+  property string _ipinfoResp: ""
+  property string _ifconfigResp: ""
+  property string _ipapiResp: ""
+
+  function applyOrg(raw, field, next) {
+    var org = LaLigaModel.Model.orgFromLookup(raw, field)
+    var isp = org === "" ? "" : LaLigaModel.Model.matchIsp(org)
+    if (isp) {
+      root.detectedIsp = isp
+      console.info("laliga-monitor: ISP " + isp + " from org '" + org + "'")
+    } else if (next !== null) {
+      next.running = true
+    } else {
+      root.detectedIsp = "none"
+      console.info("laliga-monitor: ISP not detected (org='" + org + "') — aggregate mode")
+    }
+  }
+
   Timer {
     interval: 21600000
     running: root.ispSetting === "auto"
@@ -123,16 +143,10 @@ BarWidget {
     id: ipinfoProc
     command: ["curl", "-sfL", "--max-time", "8", "https://ipinfo.io/json"]
     stdout: StdioCollector {
-      onStreamFinished: {
-        var org = LaLigaModel.Model.orgFromLookup(this.text, "org")
-        var isp = org === "" ? "" : LaLigaModel.Model.matchIsp(org)
-        if (isp) root.detectedIsp = isp
-        else if (!ipinfoProc.running && ipinfoProc.exitCode !== 0) ifconfigProc.running = true
-        else root.detectedIsp = "none"
-      }
+      onStreamFinished: root._ipinfoResp = this.text
     }
     onExited: function (exitCode) {
-      if (exitCode !== 0) ifconfigProc.running = true
+      root.applyOrg(root._ipinfoResp, "org", exitCode === 0 ? null : ifconfigProc)
     }
   }
 
@@ -140,14 +154,21 @@ BarWidget {
     id: ifconfigProc
     command: ["curl", "-sfL", "--max-time", "8", "https://ifconfig.co/json"]
     stdout: StdioCollector {
-      onStreamFinished: {
-        var org = LaLigaModel.Model.orgFromLookup(this.text, "asn_org")
-        var isp = org === "" ? "" : LaLigaModel.Model.matchIsp(org)
-        root.detectedIsp = isp || "none"
-      }
+      onStreamFinished: root._ifconfigResp = this.text
     }
     onExited: function (exitCode) {
-      if (exitCode !== 0) root.detectedIsp = "none"
+      root.applyOrg(root._ifconfigResp, "asn_org", exitCode === 0 ? null : ipapiProc)
+    }
+  }
+
+  Process {
+    id: ipapiProc
+    command: ["curl", "-sfL", "--max-time", "8", "https://ipapi.co/json/"]
+    stdout: StdioCollector {
+      onStreamFinished: root._ipapiResp = this.text
+    }
+    onExited: function (exitCode) {
+      root.applyOrg(root._ipapiResp, "org", null)
     }
   }
 
