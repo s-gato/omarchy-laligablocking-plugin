@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "sergio.laliga-monitor",
+  "name": "LaLiga blocking",
+  "version": "1.0.0",
+  "author": "Sergio",
+  "license": "MIT",
+  "description": "Shows whether LaLiga IP blocking is active on Spanish ISPs, powered by hayahora.futbol.",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "BarWidget.qml" },
+  "barWidget": {
+    "displayName": "LaLiga blocking",
+    "category": "Network",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "intervalSeconds": 300,
+      "isp": ""
+    },
+    "schema": [
+      {
+        "key": "intervalSeconds",
+        "type": "number",
+        "label": "Poll interval (seconds, min 120)"
+      },
+      {
+        "key": "isp",
+        "type": "string",
+        "label": "Your ISP: auto (default) | all | Movistar, Orange, Vodafone, DIGI, Masmovil"
+      }
+    ]
+  }
+}
