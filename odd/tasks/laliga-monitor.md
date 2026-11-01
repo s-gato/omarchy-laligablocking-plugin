@@ -127,3 +127,9 @@ blocking is active on Spanish ISPs, powered by https://hayahora.futbol.
   logged (state/activeIsp/ispSetting); declared the missing `own` property.
   Immediate user unblock: setBarWidget sergio.laliga-monitor isp '"Vodafone"' '{}'
   (4th arg selectorJson required).
+- L13 (diagnosis): disk files verified current on x390 (Style.space=0,
+  ispResolved=2, shell.json entry pinned isp:"Vodafone"), yet warnings still
+  cited old Panel.qml line numbers and no new info lines appeared — stale
+  compiled QML surviving the file-watch reload. Omarchy's shell-dev guide
+  prescribes `omarchy-restart-shell` after QML changes; handed to user as the
+  decisive step.
