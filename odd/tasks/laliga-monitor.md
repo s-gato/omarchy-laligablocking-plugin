@@ -34,9 +34,16 @@ blocking is active on Spanish ISPs, powered by https://hayahora.futbol.
 ## Tasks
 
 - T1 (S6): Stageshow mockup of bar widget states + panel, Omarchy look. → design/
+  DONE — commit 3efae40 (design/laliga-monitor/ with preview.png, rehearsal
+  frames, REHEARSAL.md).
 - T2 (S1,S4,S7): Model.js feed parsing + state logic + Node tests (RED first).
+  DONE — commit 44f0a61; 8/8 tests green.
 - T3 (S2,S3,S5): manifest.json, BarWidget.qml, Panel.qml implementing the design.
+  DONE — commit b8c803b.
 - T4 (S5): README (install/config/remove), LICENSE, icon, final validate pass.
+  DONE — commit 1b8db58; scripts/validate-manifest.mjs passes (manifest rules,
+  no symlinks, safe entry points); qmllint NOT run (no Qt on this Ubuntu box) —
+  to run on the Omarchy machine at deploy time.
 - T5 (S1): Deploy to Omarchy machine and live-test (widget states, panel open,
   disable/re-enable). BLOCKED: no SSH access to the Omarchy host from this box.
 
@@ -58,3 +65,13 @@ blocking is active on Spanish ISPs, powered by https://hayahora.futbol.
   prefer another namespace).
 - L3: No Omarchy host reachable from this machine (no DNS/SSH). T5 needs SSH
   details or manual install by the user.
+- L4: T3 QML written against the quattro shell's real sources (SystemUpdate
+  widget + WidgetButton + Color/Style singletons fetched from the omacom repo)
+  instead of guesses: WidgetButton { text, foreground, active, dimmed,
+  tooltipText }, Color.{urgent,accent,muted,foreground,popups.*}.
+- L5: Verification evidence at close: node --test 8/8;
+  scripts/validate-manifest.mjs all passed; Model.js plain-ES smoke;
+  qmllint and live Omarchy run pending (no Qt, no Omarchy host here).
+  Risk line for the diff: none of the high-risk items apply (read-only HTTP
+  GET, no stored data, no security surface, new plugin id, no concurrency
+  beyond one Timer + one Process, new repo).
