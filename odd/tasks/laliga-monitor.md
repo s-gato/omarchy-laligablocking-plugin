@@ -113,3 +113,10 @@ blocking is active on Spanish ISPs, powered by https://hayahora.futbol.
   settings was a QML duplicate-property error — fixed in commit b16ad37 by
   using the base reader. This explains both the 5/5 aggregate fallback and
   likely the overlaid text (broken component binding).
+- L11 (log evidence, user): qs log shows detection success line and repeated
+  "Panel.qml: Unable to assign [undefined] to int" at every Style.space()
+  assignment — the third-party plugin facade does not expose a working
+  Style.space; element sizes collapsed and the text overlaid. Fixed in commit
+  5c44087 with literal pixel values. Style.font.* resolves fine and stays.
+  setBarWidget requires 4 args: setBarWidget <id> <key> <valueJson> '{}' —
+  corrected command handed to the user.
