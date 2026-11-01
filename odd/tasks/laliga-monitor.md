@@ -75,3 +75,10 @@ blocking is active on Spanish ISPs, powered by https://hayahora.futbol.
   Risk line for the diff: none of the high-risk items apply (read-only HTTP
   GET, no stored data, no security surface, new plugin id, no concurrency
   beyond one Timer + one Process, new repo).
+- L6: T5 delivery path per user: Tailscale SSH tried and unavailable
+  (x390-omarchy up on the tailnet, tailscale ping 1 ms direct, but port 22
+  closed/Tailscale SSH not enabled). Serving the repo instead:
+  `tailscale serve --bg /home/sergio/.t3/projects/omarchy-laliga-plugin` ->
+  https://proxmox-ubuntu.wombat-peacock.ts.net/ (tailnet-only; raw IP fails
+  TLS, use the full ts.net name). Install one-liner handed to the user to run
+  on x390-omarchy; after install, qmllint + live checks still to observe.
