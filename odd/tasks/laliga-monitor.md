@@ -140,3 +140,9 @@ blocking is active on Spanish ISPs, powered by https://hayahora.futbol.
   the detected ISP when tracked, and the general situation when the network
   is untracked (VPN). S3 rewritten: panel always shows the full per-ISP
   table; tooltip always includes the overall fraction.
+- L15: Published: feature/laliga-monitor merged to main (a9a8315), 4MB
+  rehearsal contact sheets dropped from the repo (kept locally, .gitignore),
+  tag v1.0.0, pushed to https://github.com/s-gato/omarchy-laliga-plugin
+  (HTTPS remote via gh auth; SSH remote had no key). Repo is PRIVATE —
+  visibility flip to public pending user decision (needed for
+  `omarchy plugin add` from other machines and for the marketplace).
