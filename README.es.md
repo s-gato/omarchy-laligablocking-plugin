@@ -145,8 +145,6 @@ Después actualiza el `id` de tu entrada de barra en
 
 - `Model.js` contiene todo el parseo del feed y la lógica de estado, sin
   dependencias, y está probado con Node: `node --test tests/model.test.mjs`.
-- `design/laliga-monitor/` guarda el mock de diseño (stageshow) que
-  implementa el QML, con fotogramas de ensayo y notas.
 - Tras editar cualquier archivo bajo `~/.config/omarchy/plugins/`, el shell
   se recarga automáticamente. Valida con `omarchy plugin validate <dir>` y
   revisa con `qmllint -I "$OMARCHY_PATH/shell" BarWidget.qml Panel.qml`.

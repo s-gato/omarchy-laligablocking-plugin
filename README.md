@@ -135,8 +135,6 @@ Then update the `id` in your bar entry in `~/.config/omarchy/shell.json`
 
 - `Model.js` holds all feed parsing and state logic, dependency-free, and is
   unit-tested with Node: `node --test tests/model.test.mjs`.
-- `design/laliga-monitor/` holds the design mockup (stageshow) the QML
-  implements, with rehearsal frames and notes.
 - After editing any file under `~/.config/omarchy/plugins/`, the shell
   reloads automatically. Validate with `omarchy plugin validate <dir>` and
   lint with `qmllint -I "$OMARCHY_PATH/shell" BarWidget.qml Panel.qml`.
