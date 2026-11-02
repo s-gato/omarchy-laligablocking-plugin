@@ -1,5 +1,7 @@
 # LaLiga blocking — Omarchy bar widget
 
+English | [Español](README.es.md)
+
 A third-party [Omarchy](https://omarchy.org) shell plugin that tells you at a
 glance whether LaLiga's IP blocking is active on Spanish ISPs, powered by the
 public measurements of [hayahora.futbol](https://hayahora.futbol).
