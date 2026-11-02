@@ -1,4 +1,4 @@
-# LaLiga blocking — Omarchy bar widget
+# LaLiga Blocking Detector — Omarchy bar widget
 
 English | [Español](README.es.md)
 
